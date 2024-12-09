@@ -9,10 +9,10 @@ import Foundation
 import Puppy
 import ZIPFoundation
 
+private final class MyLogger: Sendable {
+    static let shared = MyLogger(
+        logDir: URL.documentsDirectory.appending(path: "logs"))
 
-fileprivate class MyLogger {
-    static let shared = MyLogger(logDir: URL.documentsDirectory.appending(path: "logs"))
-    
     let logger: Puppy
     let logDir: URL
 
@@ -28,14 +28,16 @@ fileprivate class MyLogger {
         try FileManager.default.createDirectory(at: logDir, withIntermediateDirectories: true)
         let fileURL = logDir.appending(path: "\(bundleIdentifier).log").absoluteURL
         print("log path: ", fileURL)
-        let rotationConfig = RotationConfig(suffixExtension: .date_uuid,
-                                            maxFileSize: 10 * 1024 * 1024,
-                                            maxArchivedFilesCount: 10)
-        let fileRotation = try FileRotationLogger("io.allsunday.AiTalker.filerotation",
-                                                  logFormat: LogFormatter(),
-                                                  fileURL: fileURL,
-                                                  rotationConfig: rotationConfig,
-                                                  delegate: nil)
+        let rotationConfig = RotationConfig(
+            suffixExtension: .date_uuid,
+            maxFileSize: 10 * 1024 * 1024,
+            maxArchivedFilesCount: 10)
+        let fileRotation = try FileRotationLogger(
+            "io.allsunday.AiTalker.filerotation",
+            logFormat: LogFormatter(),
+            fileURL: fileURL,
+            rotationConfig: rotationConfig,
+            delegate: nil)
 
         var log = Puppy()
         log.add(console)
@@ -47,7 +49,8 @@ fileprivate class MyLogger {
         let destinationURL = URL.cachesDirectory.appending(path: "log.zip")
         try? FileManager.default.removeItem(at: destinationURL)
         let t = Task.detached {
-            try FileManager.default.zipItem(at: self.logDir, to: destinationURL, compressionMethod: .deflate)
+            try FileManager.default.zipItem(
+                at: self.logDir, to: destinationURL, compressionMethod: .deflate)
         }
         do {
             try await t.value
@@ -60,7 +63,8 @@ fileprivate class MyLogger {
     fileprivate func log(
         _ items: Any...,
         logLevel: LogLevel = .debug,
-        file: String = #file, line: Int = #line, column: Int = #column, function: String = #function,
+        file: String = #file, line: Int = #line, column: Int = #column,
+        function: String = #function,
         separator: String = " ",
         terminator: String = "\n"
     ) {
@@ -75,20 +79,23 @@ fileprivate class MyLogger {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             print(fullMsg)
         }
-        logger.logMessage(logLevel, message: msg, tag: "", function: function, file: file, line: UInt(line))
+        logger.logMessage(
+            logLevel, message: msg, tag: "", function: function, file: file, line: UInt(line))
     }
 }
 
-fileprivate struct LogFormatter: LogFormattable {
+private struct LogFormatter: LogFormattable {
     private let dateFormat = DateFormatter()
 
     init() {
         dateFormat.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZ"
     }
 
-    func formatMessage(_ level: LogLevel, message: String, tag: String, function: String,
-                       file: String, line: UInt, swiftLogInfo: [String : String],
-                       label: String, date: Date, threadID: UInt64) -> String {
+    func formatMessage(
+        _ level: LogLevel, message: String, tag: String, function: String,
+        file: String, line: UInt, swiftLogInfo: [String: String],
+        label: String, date: Date, threadID: UInt64
+    ) -> String {
         let date = dateFormatter(date, withFormatter: dateFormat)
         let fileName = fileName(file)
         return "[\(date)\(level.emoji)\(level)]🧵\(threadID)✏️\(fileName)#L\(line) 👉 \(message)"

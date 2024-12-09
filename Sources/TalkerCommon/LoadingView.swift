@@ -5,30 +5,35 @@
 //  Created by feichao on 2024/6/2.
 //
 
-import SwiftUI
 @_exported import Processed
-
+import SwiftUI
 
 public struct LoadingView<T: Sendable, Content: View>: View {
     @Loadable<T> var data
     let content: (T) -> Content
     let task: @MainActor (Loadable<T>.Binding) async -> Void
     @State var inited: Bool = false
-    
-    public init(@ViewBuilder content: @escaping (T) -> Content, task: @MainActor @escaping (Loadable<T>.Binding) async -> Void) {
+
+    public init(
+        @ViewBuilder content: @escaping (T) -> Content,
+        task: @MainActor @escaping (Loadable<T>.Binding) async -> Void
+    ) {
         self.content = content
         self.task = task
     }
-    
-    public init(@ViewBuilder content: @escaping (T) -> Content, task: @MainActor @escaping () async throws -> T) {
+
+    public init(
+        @ViewBuilder content: @escaping (T) -> Content,
+        task: @MainActor @escaping () async throws -> T
+    ) {
         self.content = content
-        self.task = { @MainActor (loader: Loadable<T>.Binding) async -> Void in
+        self.task = { @Sendable @MainActor (loader: Loadable<T>.Binding) async -> Void in
             await loader.load {
                 try await task()
             }
         }
     }
-    
+
     public var body: some View {
         Group {
             switch data {
@@ -61,20 +66,21 @@ public struct LoadingView<T: Sendable, Content: View>: View {
     }
 }
 
-
-
 public struct LoadingDataView<T: Sendable, Content: View>: View {
     let content: (T) -> Content
     let state: LoadableState<T>
     let task: @MainActor () async -> Void
     @State var inited: Bool = false
-    
-    public init(_ state: LoadableState<T>, task: @MainActor @escaping () async -> Void, @ViewBuilder content: @escaping (T) -> Content) {
+
+    public init(
+        _ state: LoadableState<T>, task: @MainActor @escaping () async -> Void,
+        @ViewBuilder content: @escaping (T) -> Content
+    ) {
         self.state = state
         self.content = content
         self.task = task
     }
-    
+
     public var body: some View {
         Group {
             switch state {

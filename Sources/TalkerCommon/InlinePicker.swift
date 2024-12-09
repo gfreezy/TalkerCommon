@@ -27,6 +27,7 @@ extension InlinePickerStyle {
     }
 }
 
+@MainActor
 public protocol InlinePickerStyle: DynamicProperty {
     associatedtype Body: View
 
@@ -36,8 +37,8 @@ public protocol InlinePickerStyle: DynamicProperty {
     typealias Configuration = InlinePickerStyleConfiguration
 }
 
-struct InlinePickerStyleKey: EnvironmentKey {
-    static var defaultValue: any InlinePickerStyle = DefaultInlinePickerStyle()
+struct InlinePickerStyleKey: @preconcurrency EnvironmentKey {
+    @MainActor static let defaultValue: any InlinePickerStyle = DefaultInlinePickerStyle()
 }
 
 extension EnvironmentValues {
@@ -100,24 +101,31 @@ public struct InlinePicker<Content: View, Selection: Hashable & Equatable>: View
     }
 }
 
-#Preview {
-    @Previewable @State var selection = Color.clear
-    VStack {
-        Text("Selected: \(selection)")
-            .foregroundStyle(selection)
-        InlinePicker(selection: $selection) {
-            Color.red
-                .containerShape(Capsule())
-                .id(Color.red)
-            Color.blue
-                .containerShape(Capsule())
-                .id(Color.blue)
-            Color.green
-                .containerShape(Capsule())
-                .id(Color.green)
-        }
-        .inlinePickerStyle(.automic)
+private struct Preview: View {
+    @State var selection = Color.clear
 
-        Text(Color.white == Color(hex: "#ffffff") ? "true2" : "false2")
+    var body: some View {
+        VStack {
+            Text("Selected: \(selection)")
+                .foregroundStyle(selection)
+            InlinePicker(selection: $selection) {
+                Color.red
+                    .containerShape(Capsule())
+                    .id(Color.red)
+                Color.blue
+                    .containerShape(Capsule())
+                    .id(Color.blue)
+                Color.green
+                    .containerShape(Capsule())
+                    .id(Color.green)
+            }
+            .inlinePickerStyle(.automic)
+
+            Text(Color.white == Color(hex: "#ffffff") ? "true2" : "false2")
+        }
     }
+}
+
+#Preview {
+    Preview()
 }

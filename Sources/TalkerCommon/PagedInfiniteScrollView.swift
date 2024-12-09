@@ -23,23 +23,24 @@ struct IdentifiableContent<C: View>: View {
     }
 }
 
+@MainActor
 class Props<Content: View> {
     @Binding var currentPage: Int
     var content: (Int) -> Content
     var onPageAppear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)?
     var onPageDisappear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)?
     var onPageWillAppear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)?
-    var nextPage: ((Int) -> Int?)?
-    var prevPage: ((Int) -> Int?)?
-    
+    var nextPage: (@MainActor (Int) -> Int?)?
+    var prevPage: (@MainActor (Int) -> Int?)?
+
     init(
         currentPage: Binding<Int>,
         content: @escaping (Int) -> Content,
-        onPageAppear: ((Int, UIPageViewController.NavigationDirection) -> Void)?,
-        onPageDisappear: ((Int, UIPageViewController.NavigationDirection) -> Void)?,
-        onPageWillAppear: ((Int, UIPageViewController.NavigationDirection) -> Void)?,
-        nextPage: ((Int) -> Int?)?,
-        prevPage: ((Int) -> Int?)?) {
+        onPageAppear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)?,
+        onPageDisappear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)?,
+        onPageWillAppear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)?,
+        nextPage: (@MainActor (Int) -> Int?)?,
+        prevPage: (@MainActor (Int) -> Int?)?) {
         self._currentPage = currentPage
         self.content = content
         self.onPageAppear = onPageAppear
@@ -59,11 +60,11 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
     public init(currentPage: Binding<Int>,
          navigationOrientation: UIPageViewController.NavigationOrientation = .horizontal,
          @ViewBuilder content: @escaping (Int) -> Content,
-         nextPage: ((Int) -> Int?)? = nil,
-        prevPage: ((Int) -> Int?)? = nil,
-         onPageAppear: ((Int, UIPageViewController.NavigationDirection) -> Void)? = nil,
-         onPageDisappear: ((Int, UIPageViewController.NavigationDirection) -> Void)? = nil,
-         onPageWillAppear: ((Int, UIPageViewController.NavigationDirection) -> Void)? = nil
+         nextPage: (@MainActor (Int) -> Int?)? = nil,
+        prevPage: (@MainActor (Int) -> Int?)? = nil,
+         onPageAppear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)? = nil,
+         onPageDisappear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)? = nil,
+         onPageWillAppear: (@MainActor (Int, UIPageViewController.NavigationDirection) -> Void)? = nil
     ) {
         props = Props(currentPage: currentPage,
                       content: content,
@@ -74,7 +75,7 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
                       prevPage: prevPage)
         self.navigationOrientation = navigationOrientation
     }
-    
+
     public func makeCoordinator() -> Coordinator {
         return Coordinator(props)
     }
@@ -87,7 +88,7 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
         let initialViewController = UIHostingController(rootView: IdentifiableContent(index: props.currentPage, content: { props.content(props.currentPage) }))
         initialViewController.view.backgroundColor = .clear
         pageViewController.setViewControllers([initialViewController], direction: .forward, animated: false, completion: nil)
-        
+
         Task { @MainActor in
             // Initial page will not trigger willTransitionTo delegate method
             props.onPageWillAppear?(props.currentPage, .forward)
@@ -104,15 +105,15 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
         let currentIndex = currentViewController.rootView.index
 
         context.coordinator.props = props
-        
+
         infoLog("updateViewController", currentIndex, props.currentPage)
-        
+
         if context.coordinator.inTransition {
             currentViewController.rootView = IdentifiableContent(index: currentIndex, content: { props.content(currentIndex) })
-            
+
         } else if props.currentPage != currentIndex {
             let direction: UIPageViewController.NavigationDirection = props.currentPage > currentIndex ? .forward : .reverse
-            
+
             let newViewController = UIHostingController(rootView: IdentifiableContent(index: props.currentPage, content: { props.content(props.currentPage) }))
             newViewController.view.backgroundColor = .clear
             uiViewController.setViewControllers([newViewController], direction: direction, animated: true, completion: nil)
@@ -163,7 +164,7 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
             vc.view.backgroundColor = .clear
             return vc
         }
-        
+
         public func pageViewController(_ pageViewController: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
             infoLog("willTransitionTo")
             inTransition = true
@@ -174,7 +175,7 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
             {
                 let direction: UIPageViewController.NavigationDirection =
                     pendingIndex > currentIndex ? .forward : .reverse
-                
+
                 props.onPageWillAppear?(pendingIndex, direction)
             }
         }
@@ -185,7 +186,7 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
             guard completed else {
                 return
             }
-            
+
             let previousView = previousViewControllers.first as? UIHostingController<IdentifiableContent<Content>>
             let previousIndex = previousView?.rootView.index as Int?
             let currentView = pageViewController.viewControllers?.first as? UIHostingController<IdentifiableContent<Content>>
@@ -199,13 +200,13 @@ public struct PagedInfiniteScrollView<Content: View>: UIViewControllerRepresenta
             default:
                     .reverse
             }
-            
+
             if let currentIndex {
                 infoLog("set currentPage from pageview", currentIndex)
                 props.currentPage = currentIndex
                 props.onPageAppear?(currentIndex, direction)
             }
-            
+
             if let previousIndex {
                 props.onPageDisappear?(previousIndex, direction)
             }

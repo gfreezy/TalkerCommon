@@ -19,8 +19,8 @@ struct HeightPreferenceKey: PreferenceKey {
 }
 
 struct SizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    
+    static let defaultValue: CGSize = .zero
+
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
         value = nextValue()
     }
@@ -55,13 +55,13 @@ private struct PresentationAutoHeightModifier: ViewModifier {
     let dragIndicatorVisibility: Visibility
     let track: Bool
     let maxHeight: CGFloat
-    
+
     init(track: Bool, maxHeight: CGFloat, dragIndicatorVisibility: Visibility) {
         self.dragIndicatorVisibility = dragIndicatorVisibility
         self.track = track
         self.maxHeight = maxHeight
     }
-    
+
     func body(content: Content) -> some View {
         if track {
             content
@@ -86,7 +86,7 @@ extension View {
         self
             .modifier(ReadHeightModifier())
     }
-    
+
     public func readHeight(callback: @escaping (CGFloat) -> Void) -> some View {
         self
             .onPreferenceChange(HeightPreferenceKey.self) { height in
@@ -95,7 +95,7 @@ extension View {
                 }
             }
     }
-    
+
     public func trackAndReadHeight(callback: @escaping (CGFloat) -> Void) -> some View {
         self
             .modifier(ReadHeightModifier())
@@ -105,19 +105,19 @@ extension View {
                 }
             }
     }
-    
+
     public func trackSize() -> some View {
         self
             .modifier(ReadSizeModifier())
     }
-    
+
     public func readSize(callback: @escaping (CGSize) -> Void) -> some View {
         self
             .onPreferenceChange(SizePreferenceKey.self) { size in
                 callback(size)
             }
     }
-    
+
     public func trackAndReadSize(callback: @escaping (CGSize) -> Void) -> some View {
         self
             .modifier(ReadSizeModifier())
@@ -125,14 +125,22 @@ extension View {
                 callback(size)
             }
     }
-    
-    public func presentationAutoHeight(maxHeight: CGFloat = .infinity, dragIndicator: Visibility = .automatic) -> some View {
+
+    public func presentationAutoHeight(
+        maxHeight: CGFloat = .infinity, dragIndicator: Visibility = .automatic
+    ) -> some View {
         self
-            .modifier(PresentationAutoHeightModifier(track: true, maxHeight: maxHeight, dragIndicatorVisibility: dragIndicator))
+            .modifier(
+                PresentationAutoHeightModifier(
+                    track: true, maxHeight: maxHeight, dragIndicatorVisibility: dragIndicator))
     }
-    
-    public func presentationAutoHeightOfDecendents(maxHeight: CGFloat = .infinity, dragIndicator: Visibility = .automatic) -> some View {
+
+    public func presentationAutoHeightOfDecendents(
+        maxHeight: CGFloat = .infinity, dragIndicator: Visibility = .automatic
+    ) -> some View {
         self
-            .modifier(PresentationAutoHeightModifier(track: false, maxHeight: maxHeight, dragIndicatorVisibility: dragIndicator))
+            .modifier(
+                PresentationAutoHeightModifier(
+                    track: false, maxHeight: maxHeight, dragIndicatorVisibility: dragIndicator))
     }
 }
