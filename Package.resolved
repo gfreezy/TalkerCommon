@@ -1,0 +1,51 @@
+{
+  "originHash" : "648e9ebbad472f7196c88c7805f5214ba64484d80538026a8ab98ebeb4502ac8",
+  "pins" : [
+    {
+      "identity" : "processed",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SwiftedMind/Processed",
+      "state" : {
+        "revision" : "3eec30203744bce19f1d40af50a68d49e5de7c1b",
+        "version" : "2.2.0"
+      }
+    },
+    {
+      "identity" : "puppy",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sushichop/Puppy",
+      "state" : {
+        "revision" : "b5af02a72a5a1f92a68e6eceee19cac804067ad9",
+        "version" : "0.7.0"
+      }
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log.git",
+      "state" : {
+        "revision" : "e97a6fcb1ab07462881ac165fdbb37f067e205d5",
+        "version" : "1.5.4"
+      }
+    },
+    {
+      "identity" : "viewextractor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/GeorgeElsham/ViewExtractor",
+      "state" : {
+        "revision" : "e20b1944524d4454c2a65c0054ce345c2c5d0185",
+        "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "zipfoundation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/weichsel/ZIPFoundation",
+      "state" : {
+        "revision" : "02b6abe5f6eef7e3cbd5f247c5cc24e246efcfe0",
+        "version" : "0.9.19"
+      }
+    }
+  ],
+  "version" : 3
+}
