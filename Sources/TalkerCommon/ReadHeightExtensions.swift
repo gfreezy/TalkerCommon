@@ -87,21 +87,25 @@ extension View {
             .modifier(ReadHeightModifier())
     }
 
-    public func readHeight(callback: @escaping (CGFloat) -> Void) -> some View {
+    public func readHeight(callback: @MainActor @escaping (CGFloat) -> Void) -> some View {
         self
             .onPreferenceChange(HeightPreferenceKey.self) { height in
                 if let height {
-                    callback(height)
+                    Task { @MainActor in
+                        callback(height)
+                    }
                 }
             }
     }
 
-    public func trackAndReadHeight(callback: @escaping (CGFloat) -> Void) -> some View {
+    public func trackAndReadHeight(callback: @MainActor @escaping (CGFloat) -> Void) -> some View {
         self
             .modifier(ReadHeightModifier())
             .onPreferenceChange(HeightPreferenceKey.self) { height in
                 if let height {
-                    callback(height)
+                    Task { @MainActor in
+                        callback(height)
+                    }
                 }
             }
     }
@@ -111,18 +115,22 @@ extension View {
             .modifier(ReadSizeModifier())
     }
 
-    public func readSize(callback: @escaping (CGSize) -> Void) -> some View {
+    public func readSize(callback: @MainActor @escaping (CGSize) -> Void) -> some View {
         self
             .onPreferenceChange(SizePreferenceKey.self) { size in
-                callback(size)
+                Task { @MainActor in
+                    callback(size)
+                }
             }
     }
 
-    public func trackAndReadSize(callback: @escaping (CGSize) -> Void) -> some View {
+    public func trackAndReadSize(callback: @MainActor @escaping (CGSize) -> Void) -> some View {
         self
             .modifier(ReadSizeModifier())
             .onPreferenceChange(SizePreferenceKey.self) { size in
-                callback(size)
+                Task { @MainActor in
+                    callback(size)
+                }
             }
     }
 
