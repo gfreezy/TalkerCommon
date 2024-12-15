@@ -6,8 +6,8 @@
 //
 import UIKit
 
-enum KeychainStore {
-    enum KeychainError: Error {
+public enum KeychainStore {
+    public enum KeychainError: Error {
         // Attempted read for an item that does not exist.
         case itemNotFound
 
@@ -22,7 +22,7 @@ enum KeychainStore {
         case unexpectedStatus(OSStatus)
     }
 
-    static func save(
+    public static func save(
         password: Data,
         service: String,
         account: String
@@ -53,7 +53,7 @@ enum KeychainStore {
         }
     }
 
-    static func update(
+    public static func update(
         password: Data,
         service: String,
         account: String
@@ -89,7 +89,7 @@ enum KeychainStore {
         }
     }
 
-    static func readPassword(
+    public static func readPassword(
         service: String,
         account: String
     ) throws -> Data {
@@ -135,7 +135,7 @@ enum KeychainStore {
         return password
     }
 
-    static func deletePassword(
+    public static func deletePassword(
         service: String,
         account: String
     ) throws {
