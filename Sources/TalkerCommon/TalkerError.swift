@@ -21,9 +21,9 @@ public struct TalkerError: LocalizedError {
     /// A localized message providing "help" text if the user requests help.
     public var helpAnchor: String?
     
-    let file: String
-    let line: Int
-    let column: Int
+    public let file: String
+    public let line: Int
+    public let column: Int
 
     public init(_ errorDescription: String? = nil, failureReason: String? = nil, recoverySuggestion: String? = nil, helpAnchor: String? = nil, file: String = #file, line: Int = #line, column: Int = #column) {
         self.errorDescription = "\(file):\(line):\(column)\n\(errorDescription ?? "")"
