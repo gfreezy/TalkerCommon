@@ -176,6 +176,10 @@ public class CmRouterOld: ObservableObject {
     private var actions: [CmRouteAction] = []
     public var delegate: CmRouterDelegateProtocol?
 
+    public var isEmpty: Bool {
+        navPath.isEmpty
+    }
+    
     // Public func to push new view
     public func push(_ path: CmRouterPath) {
         actions.append(.push(path))
