@@ -128,6 +128,7 @@ public func errorLog(
         separator: separator, terminator: terminator)
 }
 
+@discardableResult
 public func infoLog(
     _ items: Any...,
     file: String = #file, line: Int = #line, column: Int = #column, function: String = #function,
