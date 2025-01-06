@@ -8,7 +8,6 @@
 import Combine
 import Foundation
 
-
 public struct ErrorMsg: Identifiable, Equatable, Sendable {
     public var id: String {
         UUID().uuidString
@@ -52,14 +51,14 @@ public final class ErrorNotifier: @unchecked Sendable {
                 ErrorMsg(msg: errMsg, file: file, fileId: fileId, line: line, column: column))
         }
     }
-    
+
     public static func postMessageError(
         _ error: TalkerError
     ) {
-        postErrorMsg(error.localizedDescription, file: error.file, line: error.line, column: error.column)
+        postErrorMsg(
+            error.localizedDescription, file: error.file, line: error.line, column: error.column)
     }
 }
-
 
 @discardableResult
 public func taskToastError(
@@ -68,24 +67,27 @@ public func taskToastError(
     isolation: isolated (any Actor)? = #isolation
 ) -> Task<(), Error> {
     return Task {
-        await toastCaptureError(closure: closure, file: file, line: line, column: column, isolation: isolation)
+        await toastCaptureError(
+            closure: closure, file: file, line: line, column: column, isolation: isolation)
     }
 }
 
-
 public func toastCaptureError(
-    closure: @escaping @isolated(any) () async throws -> Void, file: String = #file, line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
+    closure: @escaping @isolated(any) () async throws -> Void, file: String = #file,
+    line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) async {
     do {
-        try await toastError(closure: {
-            try await closure()
-        }, file: file, line: line, column: column, isolation: isolation)
+        try await toastError(
+            closure: {
+                try await closure()
+            }, file: file, line: line, column: column, isolation: isolation)
     } catch {}
 }
 
-
+@discardableResult
 public func toastError<T: Sendable>(
-    closure: @isolated(any) () async throws -> T, file: String = #file, line: Int = #line, column: Int = #column,  isolation: isolated (any Actor)? = #isolation
+    closure: @isolated(any) () async throws -> T, file: String = #file, line: Int = #line,
+    column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) async throws -> T {
     do {
         return try await closure()
@@ -101,6 +103,7 @@ public func toastError<T: Sendable>(
     }
 }
 
+@discardableResult
 public func toastError<T>(
     closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
 ) throws -> T {
@@ -123,22 +126,24 @@ public func toastErrorNoThrow<T>(
     closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
 ) {
     do {
-        try toastError(closure: {
-            let _ = try closure()
-        }, file: file, line: line, column: column)
+        try toastError(
+            closure: {
+                let _ = try closure()
+            }, file: file, line: line, column: column)
     } catch {
-        
+
     }
 }
 
+@discardableResult
 public func logError<T>(
     closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
 ) throws -> T {
     do {
         return try closure()
-    }
-    catch let error as TalkerError {
-        errorLog(error.localizedDescription, file: error.file, line: error.line, column: error.column)
+    } catch let error as TalkerError {
+        errorLog(
+            error.localizedDescription, file: error.file, line: error.line, column: error.column)
         throw error
     } catch {
         errorLog(error.localizedDescription, file: file, line: line, column: column)
@@ -146,20 +151,22 @@ public func logError<T>(
     }
 }
 
+@discardableResult
 public func logError<T: Sendable>(
-    closure: @isolated(any) () async throws -> T, file: String = #file, line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
+    closure: @isolated(any) () async throws -> T, file: String = #file, line: Int = #line,
+    column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) async throws -> T {
     do {
         return try await closure()
     } catch let error as TalkerError {
-        errorLog(error.localizedDescription, file: error.file, line: error.line, column: error.column)
+        errorLog(
+            error.localizedDescription, file: error.file, line: error.line, column: error.column)
         throw error
     } catch {
         errorLog(error.localizedDescription, file: file, line: line, column: column)
         throw error
     }
 }
-
 
 public func captureError(
     closure: () throws -> Void, file: String = #file, line: Int = #line, column: Int = #column
@@ -167,29 +174,34 @@ public func captureError(
     do {
         try closure()
     } catch let error as TalkerError {
-        errorLog(error.localizedDescription, file: error.file, line: error.line, column: error.column)
+        errorLog(
+            error.localizedDescription, file: error.file, line: error.line, column: error.column)
     } catch {
         errorLog(error.localizedDescription, file: file, line: line, column: column)
     }
 }
 
 public func captureError(
-    closure: @isolated(any) () async throws -> Void, file: String = #file, line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
+    closure: @isolated(any) () async throws -> Void, file: String = #file, line: Int = #line,
+    column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) async {
     do {
         try await closure()
     } catch let error as TalkerError {
-        errorLog(error.localizedDescription, file: error.file, line: error.line, column: error.column)
+        errorLog(
+            error.localizedDescription, file: error.file, line: error.line, column: error.column)
     } catch {
         errorLog(error.localizedDescription, file: file, line: line, column: column)
     }
 }
 
-
+@discardableResult
 public func taskCaptureError(
-    closure: @escaping @isolated(any) () async throws -> Void, file: String = #file, line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
+    closure: @escaping @isolated(any) () async throws -> Void, file: String = #file,
+    line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) -> Task<(), Error> {
     Task {
-        await captureError(closure: closure, file: file, line: line, column: column, isolation: isolation)
+        await captureError(
+            closure: closure, file: file, line: line, column: column, isolation: isolation)
     }
 }
