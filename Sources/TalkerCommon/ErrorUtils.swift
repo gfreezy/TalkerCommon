@@ -160,10 +160,10 @@ public func logError<T: Sendable>(
         return try await closure()
     } catch let error as TalkerError {
         errorLog(
-            error.localizedDescription, file: error.file, line: error.line, column: error.column)
+            String(describing: error), file: error.file, line: error.line, column: error.column)
         throw error
     } catch {
-        errorLog(error.localizedDescription, file: file, line: line, column: column)
+        errorLog(String(describing: error), file: file, line: line, column: column)
         throw error
     }
 }
@@ -175,9 +175,9 @@ public func captureError(
         try closure()
     } catch let error as TalkerError {
         errorLog(
-            error.localizedDescription, file: error.file, line: error.line, column: error.column)
+            String(describing: error), file: error.file, line: error.line, column: error.column)
     } catch {
-        errorLog(error.localizedDescription, file: file, line: line, column: column)
+        errorLog(String(describing: error), file: file, line: line, column: column)
     }
 }
 
@@ -189,9 +189,9 @@ public func captureError(
         try await closure()
     } catch let error as TalkerError {
         errorLog(
-            error.localizedDescription, file: error.file, line: error.line, column: error.column)
+            String(describing: error), file: error.file, line: error.line, column: error.column)
     } catch {
-        errorLog(error.localizedDescription, file: file, line: line, column: column)
+        errorLog(String(describing: error), file: file, line: line, column: column)
     }
 }
 
