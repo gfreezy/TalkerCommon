@@ -56,7 +56,7 @@ public final class ErrorNotifier: @unchecked Sendable {
         _ error: TalkerError
     ) {
         postErrorMsg(
-            error.localizedDescription, file: error.file, line: error.line, column: error.column)
+            String(describing: error), file: error.file, line: error.line, column: error.column)
     }
 }
 
@@ -98,7 +98,7 @@ public func toastError<T: Sendable>(
         throw error
     } catch {
         ErrorNotifier.postErrorMsg(
-            error.localizedDescription, file: file, line: line, column: column)
+            String(describing: error), file: file, line: line, column: column)
         throw error
     }
 }
@@ -113,11 +113,11 @@ public func toastError<T>(
         ErrorNotifier.postMessageError(error)
         throw error
     } catch let error as CancellationError {
-        errorLog(error.localizedDescription, file: file, line: line, column: column)
+        errorLog(String(describing: error), file: file, line: line, column: column)
         throw error
     } catch {
         ErrorNotifier.postErrorMsg(
-            error.localizedDescription, file: file, line: line, column: column)
+            String(describing: error), file: file, line: line, column: column)
         throw error
     }
 }
@@ -143,10 +143,10 @@ public func logError<T>(
         return try closure()
     } catch let error as TalkerError {
         errorLog(
-            error.localizedDescription, file: error.file, line: error.line, column: error.column)
+            String(describing: error), file: error.file, line: error.line, column: error.column)
         throw error
     } catch {
-        errorLog(error.localizedDescription, file: file, line: line, column: column)
+        errorLog(String(describing: error), file: file, line: line, column: column)
         throw error
     }
 }
