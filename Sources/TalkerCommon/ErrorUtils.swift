@@ -56,7 +56,7 @@ public final class ErrorNotifier: @unchecked Sendable {
         _ error: TalkerError
     ) {
         postErrorMsg(
-            String(describing: error), file: error.file, line: error.line, column: error.column)
+            error.errorDescription ?? "", file: error.file, line: error.line, column: error.column)
     }
 }
 
