@@ -8,7 +8,7 @@
 import Combine
 import Foundation
 
-public struct ErrorMsg: Identifiable, Sendable {
+public struct ErrorMsg: Identifiable, Sendable, Equatable {
     public var id: String {
         UUID().uuidString
     }
@@ -40,6 +40,10 @@ public struct ErrorMsg: Identifiable, Sendable {
         #else
             return "\(fileName):\(line):\(column)"
         #endif
+    }
+
+    public static func == (lhs: ErrorMsg, rhs: ErrorMsg) -> Bool {
+        lhs.msg == rhs.msg && lhs.file == rhs.file && lhs.line == rhs.line && lhs.column == rhs.column
     }
 }
 
