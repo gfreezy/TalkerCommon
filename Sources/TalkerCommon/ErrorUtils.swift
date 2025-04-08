@@ -8,7 +8,7 @@
 import Combine
 import Foundation
 
-public struct ErrorMsg: Identifiable, Equatable, Sendable {
+public struct ErrorMsg: Identifiable, Sendable {
     public var id: String {
         UUID().uuidString
     }
