@@ -12,12 +12,21 @@ public struct ErrorMsg: Identifiable, Equatable, Sendable {
     public var id: String {
         UUID().uuidString
     }
-
+    public let error: Error?
     public let msg: String
     public let file: String
     public let fileId: String
     public let line: Int
     public let column: Int
+
+    init(msg: String, error: Error?, file: String, fileId: String, line: Int, column: Int) {
+        self.error = error
+        self.msg = msg
+        self.file = file
+        self.fileId = fileId
+        self.line = line
+        self.column = column
+    }
 
     public var fileName: String {
         URL(fileURLWithPath: file).deletingPathExtension().lastPathComponent
@@ -42,13 +51,13 @@ public final class ErrorNotifier: @unchecked Sendable {
     private init() {}
 
     public static func postErrorMsg(
-        _ errMsg: String, file: String = #file, line: Int = #line, column: Int = #column,
+        _ errMsg: String, error: Error?, file: String = #file, line: Int = #line, column: Int = #column,
         fileId: String = #fileID
     ) {
         errorLog(errMsg, file: file, line: line, column: column)
         DispatchQueue.main.async {
             Self.shared.errorMsgPublisher.send(
-                ErrorMsg(msg: errMsg, file: file, fileId: fileId, line: line, column: column))
+                ErrorMsg(msg: errMsg, error: error, file: file, fileId: fileId, line: line, column: column))
         }
     }
 
@@ -56,7 +65,7 @@ public final class ErrorNotifier: @unchecked Sendable {
         _ error: TalkerError
     ) {
         postErrorMsg(
-            error.errorDescription ?? "", file: error.file, line: error.line, column: error.column)
+            error.errorDescription ?? "", error: error, file: error.file, line: error.line, column: error.column)
     }
 }
 
@@ -98,7 +107,7 @@ public func toastError<T: Sendable>(
         throw error
     } catch {
         ErrorNotifier.postErrorMsg(
-            String(describing: error), file: file, line: line, column: column)
+            String(describing: error), error: error, file: file, line: line, column: column)
         throw error
     }
 }
@@ -117,7 +126,7 @@ public func toastError<T>(
         throw error
     } catch {
         ErrorNotifier.postErrorMsg(
-            String(describing: error), file: file, line: line, column: column)
+            String(describing: error), error: error, file: file, line: line, column: column)
         throw error
     }
 }
