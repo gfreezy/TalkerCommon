@@ -51,7 +51,7 @@ public final class ErrorNotifier: @unchecked Sendable {
     private init() {}
 
     public static func postErrorMsg(
-        _ errMsg: String, error: Error?, file: String = #file, line: Int = #line, column: Int = #column,
+        _ errMsg: String, error: Error? = nil, file: String = #file, line: Int = #line, column: Int = #column,
         fileId: String = #fileID
     ) {
         errorLog(errMsg, file: file, line: line, column: column)
