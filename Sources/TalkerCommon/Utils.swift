@@ -32,7 +32,7 @@ public func kebabCaseToCamelCase(_ input: String) -> String {
 }
 
 
-public func formatLocalized(_ format: String.LocalizationValue, _ arguments: CVarArg...) -> String {
+public func formatLocalized(_ format: LocalizedStringResource, _ arguments: CVarArg...) -> String {
     let localizedFormat = String(localized: format)
     return String.localizedStringWithFormat(localizedFormat, arguments)
 }
