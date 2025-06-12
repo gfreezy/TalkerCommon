@@ -15,7 +15,7 @@ let package = Package(
             targets: ["TalkerCommon"])
     ],
     dependencies: [
-        .package(url: "https://github.com/sushichop/Puppy", from: "0.7.0"),
+        .package(url: "https://github.com/sushichop/Puppy", from: "0.8.0"),
         .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.19"),
         .package(url: "https://github.com/SwiftedMind/Processed", from: "2.2.0"),
         .package(url: "https://github.com/GeorgeElsham/ViewExtractor", from: "2.0.0"),

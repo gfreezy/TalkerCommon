@@ -9,22 +9,23 @@ import Foundation
 import Puppy
 import ZIPFoundation
 
-private final class MyLogger: Sendable {
-    static let shared = MyLogger(
-        logDir: URL.documentsDirectory.appending(path: "logs"))
+fileprivate final class MyLogger: Sendable {
+    fileprivate static let shared = Lock(MyLogger(
+        logDir: URL.documentsDirectory.appending(path: "logs")
+    ))
 
-    let logger: Puppy
-    let logDir: URL
+    private let logger: Puppy
+    private let logDir: URL
 
-    init(logDir: URL) {
+    fileprivate init(logDir: URL, logLevel: LogLevel = .debug) {
         self.logDir = logDir
-        logger = try! Self.initLogger(logDir: logDir)
+        logger = try! Self.setupLogger(logDir: logDir, logLevel: logLevel)
     }
 
-    static func initLogger(logDir: URL) throws -> Puppy {
+    fileprivate static func setupLogger(logDir: URL, logLevel: LogLevel) throws -> Puppy {
         // get bundle id
         let bundleIdentifier = Bundle.main.bundleIdentifier ?? "default"
-        let console = OSLogger(bundleIdentifier, logFormat: LogFormatter())
+        let console = OSLogger(bundleIdentifier, logLevel: logLevel, logFormat: LogFormatter())
         try FileManager.default.createDirectory(at: logDir, withIntermediateDirectories: true)
         let fileURL = logDir.appending(path: "\(bundleIdentifier).log").absoluteURL
         print("log path: ", fileURL)
@@ -34,6 +35,7 @@ private final class MyLogger: Sendable {
             maxArchivedFilesCount: 10)
         let fileRotation = try FileRotationLogger(
             "io.allsunday.AiTalker.filerotation",
+            logLevel: logLevel,
             logFormat: LogFormatter(),
             fileURL: fileURL,
             rotationConfig: rotationConfig,
@@ -44,8 +46,14 @@ private final class MyLogger: Sendable {
         log.add(fileRotation)
         return log
     }
+    
+    fileprivate static func initLogger(logDir: URL = URL.documentsDirectory.appending(path: "logs"), logLevel: LogLevel = .debug) {
+        Self.shared.setValue(MyLogger(
+            logDir: logDir, logLevel: logLevel
+        ))
+    }
 
-    func exportLogs() async -> URL {
+    fileprivate func exportLogs() async -> URL {
         let destinationURL = URL.cachesDirectory.appending(path: "log.zip")
         try? FileManager.default.removeItem(at: destinationURL)
         let t = Task.detached {
@@ -102,8 +110,16 @@ private struct LogFormatter: LogFormattable {
     }
 }
 
+public func setupLogger(
+    logDir: URL = URL.documentsDirectory.appending(path: "logs"),
+    logLevel: LogLevel = .debug
+) {
+    MyLogger.initLogger(logDir: logDir, logLevel: logLevel)
+}
+
+
 public func exportLogs() async -> URL {
-    return await MyLogger.shared.exportLogs()
+    return await MyLogger.shared.value().exportLogs()
 }
 
 public func debugLog(
@@ -112,7 +128,7 @@ public func debugLog(
     separator: String = " ",
     terminator: String = "\n"
 ) {
-    MyLogger.shared.log(
+    MyLogger.shared.value().log(
         items, logLevel: .debug, file: file, line: line, column: column, function: function,
         separator: separator, terminator: terminator)
 }
@@ -123,7 +139,7 @@ public func errorLog(
     separator: String = " ",
     terminator: String = "\n"
 ) {
-    MyLogger.shared.log(
+    MyLogger.shared.value().log(
         items, logLevel: .error, file: file, line: line, column: column, function: function,
         separator: separator, terminator: terminator)
 }
@@ -134,7 +150,7 @@ public func infoLog(
     separator: String = " ",
     terminator: String = "\n"
 ) {
-    MyLogger.shared.log(
+    MyLogger.shared.value().log(
         items, logLevel: .info, file: file, line: line, column: column, function: function,
         separator: separator, terminator: terminator)
 }

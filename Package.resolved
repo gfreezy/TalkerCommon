@@ -1,5 +1,5 @@
 {
-  "originHash" : "648e9ebbad472f7196c88c7805f5214ba64484d80538026a8ab98ebeb4502ac8",
+  "originHash" : "3aaa176050cb140c29409620293bb85b778658baae2720718700845f95250176",
   "pins" : [
     {
       "identity" : "processed",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sushichop/Puppy",
       "state" : {
-        "revision" : "b5af02a72a5a1f92a68e6eceee19cac804067ad9",
-        "version" : "0.7.0"
+        "revision" : "684d2dd2c9abe083b704fe5d109ea2fbc921ae43",
+        "version" : "0.8.0"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
       "state" : {
-        "revision" : "e97a6fcb1ab07462881ac165fdbb37f067e205d5",
-        "version" : "1.5.4"
+        "revision" : "3d8596ed08bd13520157f0355e35caed215ffbfa",
+        "version" : "1.6.3"
       }
     },
     {

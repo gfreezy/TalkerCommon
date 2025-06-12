@@ -73,49 +73,43 @@ public final class ErrorNotifier: @unchecked Sendable {
     }
 }
 
+
+/// 不改变函数签名，只打印错误日志。
 @discardableResult
-public func taskToastError(
-    closure: @escaping @isolated(any) () async throws -> Void,
-    file: String = #file, line: Int = #line, column: Int = #column,
-    isolation: isolated (any Actor)? = #isolation
-) -> Task<(), Error> {
-    return Task {
-        await toastCaptureError(
-            closure: closure, file: file, line: line, column: column, isolation: isolation)
+public func logError<T>(
+    closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
+) throws -> T {
+    do {
+        return try closure()
+    } catch let error as TalkerError {
+        errorLog(
+            String(describing: error), file: error.file, line: error.line, column: error.column)
+        throw error
+    } catch {
+        errorLog(String(describing: error), file: file, line: line, column: column)
+        throw error
     }
 }
 
-public func toastCaptureError(
-    closure: @escaping @isolated(any) () async throws -> Void, file: String = #file,
-    line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
-) async {
-    do {
-        try await toastError(
-            closure: {
-                try await closure()
-            }, file: file, line: line, column: column, isolation: isolation)
-    } catch {}
-}
-
+/// 不改变函数签名，只打印错误日志。async 版本
 @discardableResult
-public func toastError<T: Sendable>(
+public func logError<T: Sendable>(
     closure: @isolated(any) () async throws -> T, file: String = #file, line: Int = #line,
     column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) async throws -> T {
     do {
         return try await closure()
     } catch let error as TalkerError {
-        ErrorNotifier.postMessageError(error)
-        throw error
-    } catch let error as CancellationError {
+        errorLog(
+            String(describing: error), file: error.file, line: error.line, column: error.column)
         throw error
     } catch {
-        ErrorNotifier.postErrorMsg(
-            String(describing: error), error: error, file: file, line: line, column: column)
+        errorLog(String(describing: error), file: file, line: line, column: column)
         throw error
     }
 }
 
+/// 不改变函数签名，报错的时候发一个 toast 消息。
 @discardableResult
 public func toastError<T>(
     closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
@@ -135,52 +129,27 @@ public func toastError<T>(
     }
 }
 
-public func toastErrorNoThrow<T>(
-    closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
-) {
-    do {
-        try toastError(
-            closure: {
-                let _ = try closure()
-            }, file: file, line: line, column: column)
-    } catch {
-
-    }
-}
-
+/// 不改变函数签名，报错的时候发一个 toast 消息。async 版本
 @discardableResult
-public func logError<T>(
-    closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
-) throws -> T {
-    do {
-        return try closure()
-    } catch let error as TalkerError {
-        errorLog(
-            String(describing: error), file: error.file, line: error.line, column: error.column)
-        throw error
-    } catch {
-        errorLog(String(describing: error), file: file, line: line, column: column)
-        throw error
-    }
-}
-
-@discardableResult
-public func logError<T: Sendable>(
+public func toastError<T: Sendable>(
     closure: @isolated(any) () async throws -> T, file: String = #file, line: Int = #line,
     column: Int = #column, isolation: isolated (any Actor)? = #isolation
 ) async throws -> T {
     do {
         return try await closure()
     } catch let error as TalkerError {
-        errorLog(
-            String(describing: error), file: error.file, line: error.line, column: error.column)
+        ErrorNotifier.postMessageError(error)
+        throw error
+    } catch let error as CancellationError {
         throw error
     } catch {
-        errorLog(String(describing: error), file: file, line: line, column: column)
+        ErrorNotifier.postErrorMsg(
+            String(describing: error), error: error, file: file, line: line, column: column)
         throw error
     }
 }
 
+/// 把 (...) throws -> Void 变成 (...) -> Void，并记录错误日志
 public func captureError(
     closure: () throws -> Void, file: String = #file, line: Int = #line, column: Int = #column
 ) {
@@ -194,6 +163,7 @@ public func captureError(
     }
 }
 
+/// 把 (...) async throws -> Void 变成 (...) async -> Void，并记录错误日志。async 版本
 public func captureError(
     closure: @isolated(any) () async throws -> Void, file: String = #file, line: Int = #line,
     column: Int = #column, isolation: isolated (any Actor)? = #isolation
@@ -208,6 +178,7 @@ public func captureError(
     }
 }
 
+/// 把 (...) async throws -> Void 变成 (...) -> Task<(), Error>，并记录错误日志。返回 Task
 @discardableResult
 public func taskCaptureError(
     closure: @escaping @isolated(any) () async throws -> Void, file: String = #file,
@@ -216,5 +187,60 @@ public func taskCaptureError(
     Task {
         await captureError(
             closure: closure, file: file, line: line, column: column, isolation: isolation)
+    }
+}
+
+
+/// 把 (...) async throws -> Void 变成 (...) -> Task<(), Error>，并记录错误日志，发送 toast 消息。返回 Task
+@discardableResult
+public func taskToastError(
+    closure: @escaping @isolated(any) () async throws -> Void,
+    file: String = #file, line: Int = #line, column: Int = #column,
+    isolation: isolated (any Actor)? = #isolation
+) -> Task<(), Error> {
+    return Task {
+        await toastCaptureError(
+            closure: closure, file: file, line: line, column: column, isolation: isolation)
+    }
+}
+
+/// 把 (...) async throws -> Void 变成 (...) -> Task<(), Error>，并记录错误日志,发送 toast 消息。返回 Task
+public func toastCaptureError(
+    closure: @escaping @isolated(any) () async throws -> Void, file: String = #file,
+    line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
+) async {
+    do {
+        try await toastError(
+            closure: {
+                try await closure()
+            }, file: file, line: line, column: column, isolation: isolation)
+    } catch {}
+}
+
+/// 把 (...) throws -> Void 变成 (...) -> Task<(), Error>，并记录错误日志,发送 toast 消息。返回 Task
+public func toastCaptureError(
+    closure: @escaping @isolated(any) () throws -> Void, file: String = #file,
+    line: Int = #line, column: Int = #column, isolation: isolated (any Actor)? = #isolation
+) async {
+    do {
+        try await toastError(
+            closure: {
+                try await closure()
+            }, file: file, line: line, column: column, isolation: isolation)
+    } catch {}
+}
+
+
+@available(*, deprecated, renamed: "toastCaptureError", message: "Use toastCaptureError instead.")
+public func toastErrorNoThrow<T>(
+    closure: () throws -> T, file: String = #file, line: Int = #line, column: Int = #column
+) {
+    do {
+        try toastError(
+            closure: {
+                let _ = try closure()
+            }, file: file, line: line, column: column)
+    } catch {
+
     }
 }
