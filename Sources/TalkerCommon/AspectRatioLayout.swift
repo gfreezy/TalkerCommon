@@ -1,7 +1,7 @@
 import Combine
 import SwiftUI
 
-struct AspectRatioLayout: Layout {
+public struct AspectRatioLayout: Layout {
     var aspectRatio: CGFloat
     var isWidthBased: Bool
 
@@ -47,7 +47,7 @@ struct AspectRatioLayout: Layout {
         let expectedSize = sizeThatFits(proposal: proposal, subviews: subviews, cache: &cache)
         let subviewProposal = ProposedViewSize(width: expectedSize.width, height: expectedSize.height)
         let subviewSize = subview.sizeThatFits(subviewProposal)
-    
+
         // Center the subview
         let x = bounds.minX + (bounds.width - subviewSize.width) / 2
         let y = bounds.minY + (bounds.height - subviewSize.height) / 2
@@ -88,7 +88,7 @@ extension View {
                     .frame(width: 200, height: 200)
                     .clipped()
                     .padding(10)
-                
+
                 img
                     .resizable()
                     .scaledToFit()
