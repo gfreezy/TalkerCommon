@@ -5,12 +5,12 @@ public struct AspectRatioLayout: Layout {
     var aspectRatio: CGFloat
     var isWidthBased: Bool
 
-    init(aspectRatio: CGFloat, isWidthBased: Bool = true) {
+    public init(aspectRatio: CGFloat, isWidthBased: Bool = true) {
         self.aspectRatio = aspectRatio
         self.isWidthBased = isWidthBased
     }
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize
+    public func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize
     {
         guard let subview = subviews.first else {
             return .zero
@@ -39,7 +39,7 @@ public struct AspectRatioLayout: Layout {
         return expectedSize
     }
 
-    func placeSubviews(
+    public func placeSubviews(
         in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache
     ) {
         guard let subview = subviews.first else { return }
