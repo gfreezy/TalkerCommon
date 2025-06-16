@@ -44,6 +44,7 @@ struct AspectRatioLayout: Layout {
     ) {
         guard let subview = subviews.first else { return }
 
+        let expectedSize = sizeThatFits(proposal: proposal, subviews: subviews, cache: &cache)
         let subviewSize = subview.sizeThatFits(proposal)
 
         // Center the subview
@@ -52,7 +53,7 @@ struct AspectRatioLayout: Layout {
 
         subview.place(
             at: CGPoint(x: x, y: y),
-            proposal: proposal
+            proposal: expectedSize
         )
     }
 }
