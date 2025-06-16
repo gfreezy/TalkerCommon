@@ -45,15 +45,16 @@ struct AspectRatioLayout: Layout {
         guard let subview = subviews.first else { return }
 
         let expectedSize = sizeThatFits(proposal: proposal, subviews: subviews, cache: &cache)
-        let subviewSize = subview.sizeThatFits(proposal)
-
+        let subviewProposal = ProposedViewSize(width: expectedSize.width, height: expectedSize.height)
+        let subviewSize = subview.sizeThatFits(subviewProposal)
+    
         // Center the subview
         let x = bounds.minX + (bounds.width - subviewSize.width) / 2
         let y = bounds.minY + (bounds.height - subviewSize.height) / 2
 
         subview.place(
             at: CGPoint(x: x, y: y),
-            proposal: ProposedViewSize(width: expectedSize.width, height: expectedSize.height)
+            proposal: subviewProposal
         )
     }
 }
@@ -65,4 +66,35 @@ extension View {
             self
         }
     }
+}
+
+
+#Preview {
+    Rectangle()
+        .fill(.red)
+        .aspectRatioLayout(3 / 4)
+        .border(.blue)
+        .padding(10)
+}
+
+#Preview {
+    AsyncImage(url: URL(string: "https://picsum.photos/100/300")!) { phase in
+        if let img = phase.image {
+            VStack {
+                img
+                    .resizable()
+                    .scaledToFill()
+                    .aspectRatioLayout(3 / 4)
+                    .frame(width: 200, height: 200)
+                    .clipped()
+                    .padding(10)
+                
+                img
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 200, height: 200)
+            }
+        }
+    }
+    .padding()
 }
