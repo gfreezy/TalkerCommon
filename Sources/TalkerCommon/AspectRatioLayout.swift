@@ -53,7 +53,7 @@ struct AspectRatioLayout: Layout {
 
         subview.place(
             at: CGPoint(x: x, y: y),
-            proposal: expectedSize
+            proposal: ProposedViewSize(width: expectedSize.width, height: expectedSize.height)
         )
     }
 }
