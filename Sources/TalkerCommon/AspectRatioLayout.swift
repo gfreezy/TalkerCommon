@@ -10,47 +10,53 @@ struct AspectRatioLayout: Layout {
         self.isWidthBased = isWidthBased
     }
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize
+    {
         guard let subview = subviews.first else {
             return .zero
         }
 
+        let expectedSize: CGSize
         if isWidthBased {
-            let proposedWidth = proposal.width ?? subview.sizeThatFits(proposal).width
-            let height = proposedWidth / aspectRatio
-            return CGSize(width: proposedWidth, height: height)
+            let proposedWidth: CGFloat
+            if let w = proposal.width, w != .infinity {
+                proposedWidth = w
+            } else {
+                let size = subview.sizeThatFits(proposal)
+                proposedWidth = size.width
+            }
+            expectedSize = CGSize(width: proposedWidth, height: proposedWidth / aspectRatio)
         } else {
-            let proposedHeight = proposal.height ?? subview.sizeThatFits(proposal).height
-            let width = proposedHeight * aspectRatio
-            return CGSize(width: width, height: proposedHeight)
+            let proposedHeight: CGFloat
+            if let h = proposal.height, h != .infinity {
+                proposedHeight = h
+            } else {
+                let size = subview.sizeThatFits(proposal)
+                proposedHeight = size.height
+            }
+            expectedSize = CGSize(width: proposedHeight * aspectRatio, height: proposedHeight)
         }
+        return expectedSize
     }
 
     func placeSubviews(
-        in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void
+        in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache
     ) {
         guard let subview = subviews.first else { return }
 
-        let size: CGSize
-        if isWidthBased {
-            let width = bounds.width
-            let height = width / aspectRatio
-            size = CGSize(width: width, height: height)
-        } else {
-            let height = bounds.height
-            let width = height * aspectRatio
-            size = CGSize(width: width, height: height)
-        }
+        let subviewSize = subview.sizeThatFits(proposal)
 
-        let x = bounds.minX + (bounds.width - size.width) / 2
-        let y = bounds.minY + (bounds.height - size.height) / 2
+        // Center the subview
+        let x = bounds.minX + (bounds.width - subviewSize.width) / 2
+        let y = bounds.minY + (bounds.height - subviewSize.height) / 2
 
         subview.place(
             at: CGPoint(x: x, y: y),
-            proposal: ProposedViewSize(size)
+            proposal: proposal
         )
     }
 }
+
 
 extension View {
     public func aspectRatioLayout(_ aspectRatio: CGFloat, isWidthBased: Bool = true) -> some View {
