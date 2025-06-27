@@ -96,7 +96,8 @@ public class CmRouterNew {
     }
 
     // Public func to push new view
-    public func push(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+    public func push(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil)
+    {
         push(CmRouterPath(path, query, onFinish: onFinish))
     }
 
@@ -111,7 +112,9 @@ public class CmRouterNew {
     }
 
     // Public func to pop view
-    public func replace(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+    public func replace(
+        _ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil
+    ) {
         replace(CmRouterPath(path, query, onFinish: onFinish))
     }
 
@@ -132,9 +135,7 @@ public class CmRouterNew {
 
     // Should only be used by NavigationStackView
     fileprivate func pushNavPath(_ path: CmRouterPath) {
-        let newPath = delegate?.beforePush(path: path) ?? path
-        navPath.append(newPath)
-        delegate?.afterPush(path: newPath)
+        navPath.append(path)
     }
 
     // Should only be used by NavigationStackView
@@ -146,12 +147,8 @@ public class CmRouterNew {
 
     // Should only be used by NavigationStackView
     fileprivate func popNavPath() {
-        if let path = navPath.last {
-            delegate?.beforePop(path: path)
+        if !navPath.isEmpty {
             _ = navPath.popLast()
-            // Execute finish closure if exists
-            path.onFinish?()
-            delegate?.afterPop(path: path)
         } else {
             debugLog("nav path is empty")
         }
@@ -167,15 +164,7 @@ public class CmRouterNew {
         let suffix = navPath.suffix(paths.count).map { $0.path }
         let target = Array(paths.map({ $0.path }).reversed())
         if suffix == target {
-            for path in paths {
-                delegate?.beforePop(path: path)
-            }
             navPath.removeLast(paths.count)
-            for path in paths {
-                // Execute finish closure if exists
-                path.onFinish?()
-                delegate?.afterPop(path: path)
-            }
         } else {
             debugLog("nav path not match, do nothing, suffix: \(suffix), target: \(target)")
         }
@@ -228,7 +217,8 @@ public class CmRouterOld: ObservableObject {
     }
 
     // Public func to push new view
-    public func push(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+    public func push(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil)
+    {
         push(CmRouterPath(path, query, onFinish: onFinish))
     }
 
@@ -243,7 +233,9 @@ public class CmRouterOld: ObservableObject {
     }
 
     // Public func to pop view
-    public func replace(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+    public func replace(
+        _ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil
+    ) {
         replace(CmRouterPath(path, query, onFinish: onFinish))
     }
 
@@ -264,9 +256,7 @@ public class CmRouterOld: ObservableObject {
 
     // Should only be used by NavigationStackView
     fileprivate func pushNavPath(_ path: CmRouterPath) {
-        let newPath = delegate?.beforePush(path: path) ?? path
-        navPath.append(newPath)
-        delegate?.afterPush(path: newPath)
+        navPath.append(path)
     }
 
     // Should only be used by NavigationStackView
@@ -278,12 +268,8 @@ public class CmRouterOld: ObservableObject {
 
     // Should only be used by NavigationStackView
     fileprivate func popNavPath() {
-        if let path = navPath.last {
-            delegate?.beforePop(path: path)
+        if !navPath.isEmpty {
             _ = navPath.popLast()
-            // Execute finish closure if exists
-            path.onFinish?()
-            delegate?.afterPop(path: path)
         } else {
             debugLog("nav path is empty")
         }
@@ -299,19 +285,65 @@ public class CmRouterOld: ObservableObject {
         let suffix = navPath.suffix(paths.count).map { $0.path }
         let target = Array(paths.map({ $0.path }).reversed())
         if suffix == target {
-            for path in paths {
-                delegate?.beforePop(path: path)
-            }
             navPath.removeLast(paths.count)
-            for path in paths {
-                // Execute finish closure if exists
-                path.onFinish?()
-                delegate?.afterPop(path: path)
-            }
         } else {
             debugLog("nav path not match, do nothing, suffix: \(suffix), target: \(target)")
         }
     }
+}
+
+@MainActor
+private func processPathChanges(oldNavPath: [CmRouterPath], newNavPath: [CmRouterPath], delegate: CmRouterDelegateProtocol?) {
+    // Handle delegate methods and onFinish callbacks through navPath changes
+    let pathChanges = calculatePathChanges(from: oldNavPath, to: newNavPath)
+
+    // Handle beforePop for removed paths (in reverse order - LIFO)
+    for path in pathChanges.removedPaths.reversed() {
+        delegate?.beforePop(path: path)
+    }
+
+    // Handle afterPop and onFinish for removed paths (in reverse order - LIFO)
+    for path in pathChanges.removedPaths.reversed() {
+        path.onFinish?()
+        delegate?.afterPop(path: path)
+    }
+
+    // Handle beforePush and afterPush for added paths (in order - FIFO)
+    for path in pathChanges.addedPaths {
+        let processedPath = delegate?.beforePush(path: path) ?? path
+        delegate?.afterPush(path: processedPath)
+    }
+}
+
+private func calculatePathChanges(from oldPath: [CmRouterPath], to newPath: [CmRouterPath]) -> (
+    addedPaths: [CmRouterPath], removedPaths: [CmRouterPath]
+) {
+    var addedPaths: [CmRouterPath] = []
+    var removedPaths: [CmRouterPath] = []
+
+    // Find the common prefix length
+    let commonLength = min(oldPath.count, newPath.count)
+    var commonPrefixLength = 0
+
+    for i in 0..<commonLength {
+        if oldPath[i] == newPath[i] {
+            commonPrefixLength = i + 1
+        } else {
+            break
+        }
+    }
+
+    // Everything after the common prefix in oldPath is removed
+    if commonPrefixLength < oldPath.count {
+        removedPaths = Array(oldPath.suffix(from: commonPrefixLength))
+    }
+
+    // Everything after the common prefix in newPath is added
+    if commonPrefixLength < newPath.count {
+        addedPaths = Array(newPath.suffix(from: commonPrefixLength))
+    }
+
+    return (addedPaths: addedPaths, removedPaths: removedPaths)
 }
 
 @available(iOS 17.0, *)
@@ -368,7 +400,11 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
                 }
             }
         }
+        .onChange(of: router.navPath) { oldNavPath, newNavPath in
+            processPathChanges(oldNavPath: oldNavPath, newNavPath: newNavPath, delegate: delegate)
+        }
     }
+
 }
 
 @available(iOS, introduced: 16.0, obsoleted: 17.0)
@@ -426,6 +462,9 @@ public struct CmRouterViewOld<Content: View, Dest: View>: View {
                 }
             }
         }
+        .onChange(of: router.navPath) { oldNavPath in
+            processPathChanges(oldNavPath: oldNavPath, newNavPath: router.navPath, delegate: delegate)
+        }
     }
 }
 
@@ -437,7 +476,10 @@ public struct NavigationButtonNew<Body: View>: View {
 
     @Environment(CmRouterNew.self) var router
 
-    public init(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil, @ViewBuilder body: () -> Body) {
+    public init(
+        _ path: (String, [String: String]), onFinish: (() -> Void)? = nil,
+        @ViewBuilder body: () -> Body
+    ) {
         self.path = path
         self.onFinish = onFinish
         self.destination = body()
@@ -460,7 +502,10 @@ public struct NavigationButtonOld<Body: View>: View {
 
     @EnvironmentObject var router: CmRouterOld
 
-    public init(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil, @ViewBuilder body: () -> Body) {
+    public init(
+        _ path: (String, [String: String]), onFinish: (() -> Void)? = nil,
+        @ViewBuilder body: () -> Body
+    ) {
         self.path = path
         self.onFinish = onFinish
         self.destination = body()
