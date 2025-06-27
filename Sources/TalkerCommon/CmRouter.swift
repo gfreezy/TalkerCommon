@@ -3,10 +3,23 @@ import SwiftUI
 public struct CmRouterPath: Hashable, Equatable {
     public let path: String
     public let query: [String: String]
+    public let onFinish: (() -> Void)?
 
-    public init(_ path: String, _ query: [String: String] = [:]) {
+    public init(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
         self.path = path
         self.query = query
+        self.onFinish = onFinish
+    }
+
+    // MARK: - Hashable
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(path)
+        hasher.combine(query)
+    }
+
+    // MARK: - Equatable
+    public static func == (lhs: CmRouterPath, rhs: CmRouterPath) -> Bool {
+        return lhs.path == rhs.path && lhs.query == rhs.query
     }
 }
 
@@ -83,8 +96,8 @@ public class CmRouterNew {
     }
 
     // Public func to push new view
-    public func push(_ path: String, _ query: [String: String] = [:]) {
-        push(CmRouterPath(path, query))
+    public func push(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+        push(CmRouterPath(path, query, onFinish: onFinish))
     }
 
     // Pop if the last path matches `path`
@@ -98,13 +111,13 @@ public class CmRouterNew {
     }
 
     // Public func to pop view
-    public func replace(_ path: String, _ query: [String: String] = [:]) {
-        replace(CmRouterPath(path, query))
+    public func replace(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+        replace(CmRouterPath(path, query, onFinish: onFinish))
     }
 
     // Public func to push new view
-    public func push(_ path: (String, [String: String])) {
-        push(CmRouterPath(path.0, path.1))
+    public func push(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil) {
+        push(CmRouterPath(path.0, path.1, onFinish: onFinish))
     }
 
     // Pop if the last path matches `path`
@@ -113,8 +126,8 @@ public class CmRouterNew {
     }
 
     // Public func to pop view
-    public func replace(_ path: (String, [String: String])) {
-        replace(CmRouterPath(path.0, path.1))
+    public func replace(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil) {
+        replace(CmRouterPath(path.0, path.1, onFinish: onFinish))
     }
 
     // Should only be used by NavigationStackView
@@ -136,6 +149,8 @@ public class CmRouterNew {
         if let path = navPath.last {
             delegate?.beforePop(path: path)
             _ = navPath.popLast()
+            // Execute finish closure if exists
+            path.onFinish?()
             delegate?.afterPop(path: path)
         } else {
             debugLog("nav path is empty")
@@ -157,6 +172,8 @@ public class CmRouterNew {
             }
             navPath.removeLast(paths.count)
             for path in paths {
+                // Execute finish closure if exists
+                path.onFinish?()
                 delegate?.afterPop(path: path)
             }
         } else {
@@ -179,7 +196,7 @@ public class CmRouterOld: ObservableObject {
     public var isEmpty: Bool {
         navPath.isEmpty
     }
-    
+
     // Public func to push new view
     public func push(_ path: CmRouterPath) {
         actions.append(.push(path))
@@ -211,8 +228,8 @@ public class CmRouterOld: ObservableObject {
     }
 
     // Public func to push new view
-    public func push(_ path: String, _ query: [String: String] = [:]) {
-        push(CmRouterPath(path, query))
+    public func push(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+        push(CmRouterPath(path, query, onFinish: onFinish))
     }
 
     // Pop if the last path matches `path`
@@ -226,13 +243,13 @@ public class CmRouterOld: ObservableObject {
     }
 
     // Public func to pop view
-    public func replace(_ path: String, _ query: [String: String] = [:]) {
-        replace(CmRouterPath(path, query))
+    public func replace(_ path: String, _ query: [String: String] = [:], onFinish: (() -> Void)? = nil) {
+        replace(CmRouterPath(path, query, onFinish: onFinish))
     }
 
     // Public func to push new view
-    public func push(_ path: (String, [String: String])) {
-        push(CmRouterPath(path.0, path.1))
+    public func push(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil) {
+        push(CmRouterPath(path.0, path.1, onFinish: onFinish))
     }
 
     // Pop if the last path matches `path`
@@ -241,8 +258,8 @@ public class CmRouterOld: ObservableObject {
     }
 
     // Public func to pop view
-    public func replace(_ path: (String, [String: String])) {
-        replace(CmRouterPath(path.0, path.1))
+    public func replace(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil) {
+        replace(CmRouterPath(path.0, path.1, onFinish: onFinish))
     }
 
     // Should only be used by NavigationStackView
@@ -264,6 +281,8 @@ public class CmRouterOld: ObservableObject {
         if let path = navPath.last {
             delegate?.beforePop(path: path)
             _ = navPath.popLast()
+            // Execute finish closure if exists
+            path.onFinish?()
             delegate?.afterPop(path: path)
         } else {
             debugLog("nav path is empty")
@@ -285,6 +304,8 @@ public class CmRouterOld: ObservableObject {
             }
             navPath.removeLast(paths.count)
             for path in paths {
+                // Execute finish closure if exists
+                path.onFinish?()
                 delegate?.afterPop(path: path)
             }
         } else {
@@ -412,17 +433,19 @@ public struct CmRouterViewOld<Content: View, Dest: View>: View {
 public struct NavigationButtonNew<Body: View>: View {
     let destination: Body
     let path: (String, [String: String])
+    let onFinish: (() -> Void)?
 
     @Environment(CmRouterNew.self) var router
 
-    public init(_ path: (String, [String: String]), @ViewBuilder body: () -> Body) {
+    public init(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil, @ViewBuilder body: () -> Body) {
         self.path = path
+        self.onFinish = onFinish
         self.destination = body()
     }
 
     public var body: some View {
         Button(action: {
-            router.push(path)
+            router.push(path, onFinish: onFinish)
         }) {
             destination
         }
@@ -433,17 +456,19 @@ public struct NavigationButtonNew<Body: View>: View {
 public struct NavigationButtonOld<Body: View>: View {
     let destination: Body
     let path: (String, [String: String])
+    let onFinish: (() -> Void)?
 
     @EnvironmentObject var router: CmRouterOld
 
-    public init(_ path: (String, [String: String]), @ViewBuilder body: () -> Body) {
+    public init(_ path: (String, [String: String]), onFinish: (() -> Void)? = nil, @ViewBuilder body: () -> Body) {
         self.path = path
+        self.onFinish = onFinish
         self.destination = body()
     }
 
     public var body: some View {
         Button(action: {
-            router.push(path)
+            router.push(path, onFinish: onFinish)
         }) {
             destination
         }
