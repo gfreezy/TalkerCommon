@@ -13,6 +13,7 @@ A navigation router that provides:
 - Navigation delegate hooks for custom behavior
 - Support for iOS 16+ and iOS 17+ with SwiftUI navigation
 - Type-safe routing with `@Routable` macro, github: [TalkerMacro](https://github.com/gfreezy/TalkerMacro)
+- **onFinish callbacks** - Execute closures when pages are closed
 
 ### 定义页面路由
 
@@ -56,6 +57,33 @@ struct RouterView: View {
             HomeView()
         }
     }
+}
+```
+
+### 使用 onFinish 回调
+
+```swift
+// 使用便利方法
+router.push("profile", ["id": "123"]) {
+    print("Profile page was closed")
+}
+
+// 使用 CmRouterPath
+let path = CmRouterPath("settings", ["tab": "general"]) {
+    print("Settings page was closed")
+}
+router.push(path)
+
+// 使用 NavigationButton
+NavigationButton(("profile", ["id": "123"]), onFinish: {
+    print("Profile page was closed")
+}) {
+    Text("Go to Profile")
+}
+
+// 使用 replace 方法
+router.replace("home") {
+    print("Previous page was replaced")
 }
 ```
 
