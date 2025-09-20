@@ -28,6 +28,7 @@ public enum CmRouteAction {
     case pop
     case popIfMatch(CmRouterPath)
     case popMultiIfMatch([CmRouterPath])
+    case popToRoot
 }
 
 @MainActor
@@ -189,6 +190,12 @@ public class CmRouterOld: ObservableObject {
     // Public func to push new view
     public func push(_ path: CmRouterPath) {
         actions.append(.push(path))
+        navigationTrigger += 1
+    }
+
+    // Public func to push new view
+    public func popToRoot() {
+        actions.append(.popToRoot)
         navigationTrigger += 1
     }
 
@@ -397,6 +404,8 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
                     router.popNavPathIfMatch(path)
                 case .popMultiIfMatch(let paths):
                     router.popMultiNavPathsIfMatch(paths)
+                case .popToRoot:
+                    router.popToRootNavPath()
                 }
             }
         }
