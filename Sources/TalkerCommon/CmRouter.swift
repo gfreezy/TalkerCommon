@@ -89,7 +89,12 @@ public class CmRouterNew {
         actions.append(.popMultiIfMatch(paths))
         navigationTrigger += 1
     }
-
+    
+    public func popToRoot() {
+        actions.append(.popToRoot)
+        navigationTrigger += 1
+    }
+    
     // Public func to pop view
     public func replace(_ path: CmRouterPath) {
         pop()
@@ -405,7 +410,7 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
                 case .popMultiIfMatch(let paths):
                     router.popMultiNavPathsIfMatch(paths)
                 case .popToRoot:
-                    router.popToRootNavPath()
+                    router.popToRoot()
                 }
             }
         }
@@ -468,6 +473,8 @@ public struct CmRouterViewOld<Content: View, Dest: View>: View {
                     router.popNavPathIfMatch(path)
                 case .popMultiIfMatch(let paths):
                     router.popMultiNavPathsIfMatch(paths)
+                case .popToRoot:
+                    router.popToRoot()
                 }
             }
         }

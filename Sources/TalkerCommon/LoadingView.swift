@@ -63,7 +63,7 @@ public struct LoadingView<T: Sendable, Content: View>: View {
             case .error(let error):
                 VStack {
                     Spacer()
-                    Text("Error: \(error)")
+                    Text(String("Error: \(error)"))
                     Button("Retry") {
                         Task {
                             await task($loadableData)
@@ -114,7 +114,7 @@ public struct LoadingDataView<T: Sendable, Content: View>: View {
             case .error(let error):
                 VStack {
                     Spacer()
-                    Text("Error: \(error)")
+                    Text(verbatim: "Error: \(error)")
                     Button("Retry") {
                         Task {
                             await task()

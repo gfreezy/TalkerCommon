@@ -106,7 +106,7 @@ private struct Preview: View {
 
     var body: some View {
         VStack {
-            Text("Selected: \(selection)")
+            Text(verbatim: "Selected: \(selection)")
                 .foregroundStyle(selection)
             InlinePicker(selection: $selection) {
                 Color.red
