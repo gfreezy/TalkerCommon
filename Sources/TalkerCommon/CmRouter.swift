@@ -66,6 +66,14 @@ public class CmRouterNew {
     @ObservationIgnored private var actions: [CmRouteAction] = []
     public var delegate: CmRouterDelegateProtocol?
 
+    public var isEmpty: Bool {
+        navPath.isEmpty
+    }
+
+    public var isRoot: Bool {
+        navPath.isEmpty || navPath.count == 1
+    }
+
     // Public func to push new view
     public func push(_ path: CmRouterPath) {
         actions.append(.push(path))
@@ -190,6 +198,10 @@ public class CmRouterOld: ObservableObject {
 
     public var isEmpty: Bool {
         navPath.isEmpty
+    }
+
+    public var isRoot: Bool {
+        navPath.isEmpty || navPath.count == 1
     }
 
     // Public func to push new view
