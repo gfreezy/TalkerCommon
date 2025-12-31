@@ -71,7 +71,7 @@ public class CmRouterNew {
     }
 
     public var isRoot: Bool {
-        navPath.isEmpty || navPath.count == 1
+        navPath.isEmpty
     }
 
     // Public func to push new view
@@ -201,7 +201,7 @@ public class CmRouterOld: ObservableObject {
     }
 
     public var isRoot: Bool {
-        navPath.isEmpty || navPath.count == 1
+        navPath.isEmpty
     }
 
     // Public func to push new view
