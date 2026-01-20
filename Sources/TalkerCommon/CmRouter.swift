@@ -183,6 +183,11 @@ public class CmRouterNew {
             debugLog("nav path not match, do nothing, suffix: \(suffix), target: \(target)")
         }
     }
+
+    // Should only be used by NavigationStackView
+    fileprivate func popNavPathToRoot() {
+        navPath.removeAll()
+    }
 }
 
 @available(iOS, introduced: 16.0, obsoleted: 17.0)
@@ -314,6 +319,11 @@ public class CmRouterOld: ObservableObject {
             debugLog("nav path not match, do nothing, suffix: \(suffix), target: \(target)")
         }
     }
+
+    // Should only be used by NavigationStackView
+    fileprivate func popNavPathToRoot() {
+        navPath.removeAll()
+    }
 }
 
 @MainActor
@@ -422,7 +432,7 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
                 case .popMultiIfMatch(let paths):
                     router.popMultiNavPathsIfMatch(paths)
                 case .popToRoot:
-                    router.popToRoot()
+                    router.popNavPathToRoot()
                 }
             }
         }
@@ -486,7 +496,7 @@ public struct CmRouterViewOld<Content: View, Dest: View>: View {
                 case .popMultiIfMatch(let paths):
                     router.popMultiNavPathsIfMatch(paths)
                 case .popToRoot:
-                    router.popToRoot()
+                    router.popNavPathToRoot()
                 }
             }
         }
