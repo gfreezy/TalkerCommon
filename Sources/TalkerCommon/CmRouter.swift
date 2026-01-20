@@ -76,29 +76,34 @@ public class CmRouterNew {
 
     // Public func to push new view
     public func push(_ path: CmRouterPath) {
+        debugLog("[CmRouter] push() called: \(path.path), navPath.count=\(navPath.count), trigger=\(navigationTrigger)")
         actions.append(.push(path))
         navigationTrigger += 1
     }
 
     // Public func to pop view
     public func pop() {
+        debugLog("[CmRouter] pop() called, navPath.count=\(navPath.count), trigger=\(navigationTrigger)")
         actions.append(.pop)
         navigationTrigger += 1
     }
 
     // Pop if the last path matches `path`
     public func popIfMatch(_ path: CmRouterPath) {
+        debugLog("[CmRouter] popIfMatch() called: \(path.path), navPath.count=\(navPath.count)")
         actions.append(.popIfMatch(path))
         navigationTrigger += 1
     }
 
     // Pop if the last path matches `path`
     public func popMultiIfMatch(_ paths: [CmRouterPath]) {
+        debugLog("[CmRouter] popMultiIfMatch() called, paths=\(paths.map { $0.path }), navPath.count=\(navPath.count)")
         actions.append(.popMultiIfMatch(paths))
         navigationTrigger += 1
     }
-    
+
     public func popToRoot() {
+        debugLog("[CmRouter] popToRoot() called, navPath.count=\(navPath.count)")
         actions.append(.popToRoot)
         navigationTrigger += 1
     }
@@ -328,25 +333,32 @@ public class CmRouterOld: ObservableObject {
 
 @MainActor
 private func processPathChanges(oldNavPath: [CmRouterPath], newNavPath: [CmRouterPath], delegate: CmRouterDelegateProtocol?) {
+    debugLog("[CmRouter] processPathChanges: old=\(oldNavPath.map { $0.path }), new=\(newNavPath.map { $0.path })")
     // Handle delegate methods and onFinish callbacks through navPath changes
     let pathChanges = calculatePathChanges(from: oldNavPath, to: newNavPath)
+    debugLog("[CmRouter] pathChanges: added=\(pathChanges.addedPaths.map { $0.path }), removed=\(pathChanges.removedPaths.map { $0.path })")
 
     // Handle beforePop for removed paths (in reverse order - LIFO)
     for path in pathChanges.removedPaths.reversed() {
+        debugLog("[CmRouter] calling delegate.beforePop: \(path.path)")
         delegate?.beforePop(path: path)
     }
 
     // Handle afterPop and onFinish for removed paths (in reverse order - LIFO)
     for path in pathChanges.removedPaths.reversed() {
+        debugLog("[CmRouter] calling onFinish and delegate.afterPop: \(path.path)")
         path.onFinish?()
         delegate?.afterPop(path: path)
     }
 
     // Handle beforePush and afterPush for added paths (in order - FIFO)
     for path in pathChanges.addedPaths {
+        debugLog("[CmRouter] calling delegate.beforePush: \(path.path)")
         let processedPath = delegate?.beforePush(path: path) ?? path
+        debugLog("[CmRouter] calling delegate.afterPush: \(processedPath.path)")
         delegate?.afterPush(path: processedPath)
     }
+    debugLog("[CmRouter] processPathChanges done")
 }
 
 private func calculatePathChanges(from oldPath: [CmRouterPath], to newPath: [CmRouterPath]) -> (
@@ -420,8 +432,10 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
             router.delegate = delegate
         }
         .environment(router)
-        .onChange(of: router.navigationTrigger, initial: false) { _, _ in
+        .onChange(of: router.navigationTrigger, initial: false) { oldValue, newValue in
+            debugLog("[CmRouter] onChange(navigationTrigger): \(oldValue) -> \(newValue)")
             for action in router.takeAllNavAction() {
+                debugLog("[CmRouter] processing action: \(action)")
                 switch action {
                 case .push(let path):
                     router.pushNavPath(path)
@@ -435,8 +449,10 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
                     router.popNavPathToRoot()
                 }
             }
+            debugLog("[CmRouter] onChange(navigationTrigger) done, navPath.count=\(router.navPath.count)")
         }
         .onChange(of: router.navPath) { oldNavPath, newNavPath in
+            debugLog("[CmRouter] onChange(navPath): \(oldNavPath.count) -> \(newNavPath.count)")
             processPathChanges(oldNavPath: oldNavPath, newNavPath: newNavPath, delegate: delegate)
         }
     }
