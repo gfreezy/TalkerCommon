@@ -421,18 +421,20 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
         }
         .environment(router)
         .onChange(of: router.navigationTrigger, initial: false) { _, _ in
-            for action in router.takeAllNavAction() {
-                switch action {
-                case .push(let path):
-                    router.pushNavPath(path)
-                case .pop:
-                    router.popNavPath()
-                case .popIfMatch(let path):
-                    router.popNavPathIfMatch(path)
-                case .popMultiIfMatch(let paths):
-                    router.popMultiNavPathsIfMatch(paths)
-                case .popToRoot:
-                    router.popNavPathToRoot()
+            Task { @MainActor in
+                for action in router.takeAllNavAction() {
+                    switch action {
+                    case .push(let path):
+                        router.pushNavPath(path)
+                    case .pop:
+                        router.popNavPath()
+                    case .popIfMatch(let path):
+                        router.popNavPathIfMatch(path)
+                    case .popMultiIfMatch(let paths):
+                        router.popMultiNavPathsIfMatch(paths)
+                    case .popToRoot:
+                        router.popNavPathToRoot()
+                    }
                 }
             }
         }
