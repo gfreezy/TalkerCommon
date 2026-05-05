@@ -59,10 +59,10 @@ public final class OneShotChannel<T: Sendable>: @unchecked Sendable {
     // that method introduces a suspension point, so we need a lock. The compiler
     // complains about lock() in async contexts, so the helpers below mute the
     // warning by hiding the lock behind regular methods.
-    func lock() { _lock.lock() }
-    func unlock() { _lock.unlock() }
+    private func lock() { _lock.lock() }
+    private func unlock() { _lock.unlock() }
 
-    var isFinished: Bool {
+    public var isFinished: Bool {
         lock()
         defer { unlock() }
         if case .pending = value {
