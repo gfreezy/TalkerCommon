@@ -6,7 +6,8 @@ import PackageDescription
 let package = Package(
     name: "TalkerCommon",
     platforms: [
-        .iOS(.v16)
+        .iOS(.v16),
+        .macOS(.v14),
     ],
     products: [
         .library(name: "TalkerCommon", targets: ["TalkerCommon"]),
