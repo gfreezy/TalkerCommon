@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TalkerCommonLogging
 
 extension View {
     public func taskThrows(

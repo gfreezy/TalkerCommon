@@ -1,5 +1,9 @@
 import SwiftUI
+import TalkerCommonLogging
 
+/// 注意:`onFinish` 不参与 `==`/`hash` —— closure 没法 Hashable。
+/// 两个 path/query 相同但 onFinish 不同的 `CmRouterPath` 在比较时视为相等,
+/// `popMultiIfMatch` 等场景不要依赖 onFinish 区分。
 public struct CmRouterPath: Hashable, Equatable {
     public let path: String
     public let query: [String: String]
@@ -25,6 +29,7 @@ public struct CmRouterPath: Hashable, Equatable {
 
 public enum CmRouteAction {
     case push(CmRouterPath)
+    case replace(CmRouterPath)
     case pop
     case popIfMatch(CmRouterPath)
     case popMultiIfMatch([CmRouterPath])
@@ -33,25 +38,14 @@ public enum CmRouteAction {
 
 @MainActor
 public protocol CmRouterDelegateProtocol: AnyObject {
-    func beforePush(path: CmRouterPath) -> CmRouterPath
     func afterPush(path: CmRouterPath)
-    func beforePop(path: CmRouterPath)
     func afterPop(path: CmRouterPath)
 }
 
 public class CmDefaultRouterDelegate: CmRouterDelegateProtocol {
-    public func beforePush(path: CmRouterPath) -> CmRouterPath {
-        path
-    }
-    public func afterPush(path: CmRouterPath) {
-
-    }
-    public func beforePop(path: CmRouterPath) {
-    }
-
-    public func afterPop(path: CmRouterPath) {
-
-    }
+    public init() {}
+    public func afterPush(path: CmRouterPath) {}
+    public func afterPop(path: CmRouterPath) {}
 }
 
 @available(iOS, introduced: 17.0)
@@ -64,7 +58,9 @@ public class CmRouterNew {
     fileprivate var navigationTrigger: Int = 0
 
     @ObservationIgnored private var actions: [CmRouteAction] = []
-    public var delegate: CmRouterDelegateProtocol?
+    // 用于在 onChange(of: navPath) 里区分"程序触发"和"用户手势返回"
+    @ObservationIgnored fileprivate var lastSyncedNavPath: [CmRouterPath] = []
+    @ObservationIgnored public weak var delegate: CmRouterDelegateProtocol?
 
     public var isEmpty: Bool {
         navPath.isEmpty
@@ -97,16 +93,16 @@ public class CmRouterNew {
         actions.append(.popMultiIfMatch(paths))
         navigationTrigger += 1
     }
-    
+
     public func popToRoot() {
         actions.append(.popToRoot)
         navigationTrigger += 1
     }
-    
-    // Public func to pop view
+
+    // Public func to replace top of stack (atomic)
     public func replace(_ path: CmRouterPath) {
-        pop()
-        push(path)
+        actions.append(.replace(path))
+        navigationTrigger += 1
     }
 
     // Public func to push new view
@@ -169,24 +165,30 @@ public class CmRouterNew {
     }
 
     // Should only be used by NavigationStackView
-    fileprivate func popNavPathIfMatch(_ path: CmRouterPath) {
-        popMultiIfMatch([path])
-    }
-
-    // Should only be used by NavigationStackView
-    fileprivate func popMultiNavPathsIfMatch(_ paths: [CmRouterPath]) {
+    fileprivate func popMultiNavPathsIfMatch(_ paths: [CmRouterPath]) -> Bool {
         let suffix = navPath.suffix(paths.count).map { $0.path }
         let target = Array(paths.map({ $0.path }).reversed())
         if suffix == target {
             navPath.removeLast(paths.count)
+            return true
         } else {
             debugLog("nav path not match, do nothing, suffix: \(suffix), target: \(target)")
+            return false
         }
     }
 
     // Should only be used by NavigationStackView
     fileprivate func popNavPathToRoot() {
         navPath.removeAll()
+    }
+
+    // Should only be used by NavigationStackView — atomic pop+push (single binding update)
+    fileprivate func replaceNavPath(_ path: CmRouterPath) -> CmRouterPath? {
+        var newNav = navPath
+        let popped = newNav.popLast()
+        newNav.append(path)
+        navPath = newNav
+        return popped
     }
 }
 
@@ -199,7 +201,8 @@ public class CmRouterOld: ObservableObject {
     @Published fileprivate var navigationTrigger: Int = 0
 
     private var actions: [CmRouteAction] = []
-    public var delegate: CmRouterDelegateProtocol?
+    fileprivate var lastSyncedNavPath: [CmRouterPath] = []
+    public weak var delegate: CmRouterDelegateProtocol?
 
     public var isEmpty: Bool {
         navPath.isEmpty
@@ -239,10 +242,10 @@ public class CmRouterOld: ObservableObject {
         navigationTrigger += 1
     }
 
-    // Public func to pop view
+    // Public func to replace top of stack (atomic)
     public func replace(_ path: CmRouterPath) {
-        pop()
-        push(path)
+        actions.append(.replace(path))
+        navigationTrigger += 1
     }
 
     // Public func to push new view
@@ -305,18 +308,15 @@ public class CmRouterOld: ObservableObject {
     }
 
     // Should only be used by NavigationStackView
-    fileprivate func popNavPathIfMatch(_ path: CmRouterPath) {
-        popMultiIfMatch([path])
-    }
-
-    // Should only be used by NavigationStackView
-    fileprivate func popMultiNavPathsIfMatch(_ paths: [CmRouterPath]) {
+    fileprivate func popMultiNavPathsIfMatch(_ paths: [CmRouterPath]) -> Bool {
         let suffix = navPath.suffix(paths.count).map { $0.path }
         let target = Array(paths.map({ $0.path }).reversed())
         if suffix == target {
             navPath.removeLast(paths.count)
+            return true
         } else {
             debugLog("nav path not match, do nothing, suffix: \(suffix), target: \(target)")
+            return false
         }
     }
 
@@ -324,28 +324,34 @@ public class CmRouterOld: ObservableObject {
     fileprivate func popNavPathToRoot() {
         navPath.removeAll()
     }
+
+    // Should only be used by NavigationStackView — atomic pop+push (single binding update)
+    fileprivate func replaceNavPath(_ path: CmRouterPath) -> CmRouterPath? {
+        var newNav = navPath
+        let popped = newNav.popLast()
+        newNav.append(path)
+        navPath = newNav
+        return popped
+    }
 }
 
+/// 处理"用户手势返回"导致的 navPath 变化(程序触发的 push/pop 已在 trigger handler 里调用过 delegate)。
+/// 通过 lastSyncedNavPath 与当前 navPath 的 diff,只对未触发过 delegate 的部分补调。
 @MainActor
-private func processPathChanges(oldNavPath: [CmRouterPath], newNavPath: [CmRouterPath], delegate: CmRouterDelegateProtocol?) {
-    // Handle delegate methods and onFinish callbacks through navPath changes
-    let pathChanges = calculatePathChanges(from: oldNavPath, to: newNavPath)
+private func processGesturePathChanges(
+    from oldSynced: [CmRouterPath],
+    to newNavPath: [CmRouterPath],
+    delegate: CmRouterDelegateProtocol?
+) {
+    let changes = calculatePathChanges(from: oldSynced, to: newNavPath)
 
-    // Handle beforePop for removed paths (in reverse order - LIFO)
-    for path in pathChanges.removedPaths.reversed() {
-        delegate?.beforePop(path: path)
-    }
-
-    // Handle afterPop and onFinish for removed paths (in reverse order - LIFO)
-    for path in pathChanges.removedPaths.reversed() {
+    for path in changes.removedPaths.reversed() {
         path.onFinish?()
         delegate?.afterPop(path: path)
     }
-
-    // Handle beforePush and afterPush for added paths (in order - FIFO)
-    for path in pathChanges.addedPaths {
-        let processedPath = delegate?.beforePush(path: path) ?? path
-        delegate?.afterPush(path: processedPath)
+    // 防御性处理:用户手势一般只 pop,但万一原生 NavigationLink 推了页面也兜住
+    for path in changes.addedPaths {
+        delegate?.afterPush(path: path)
     }
 }
 
@@ -416,31 +422,85 @@ public struct CmRouterViewNew<Content: View, Dest: View>: View {
                     destinationView(path)
                 }
         }
-        .onAppear {
+        .task {
             router.delegate = delegate
         }
         .environment(router)
         .onChange(of: router.navigationTrigger, initial: false) { _, _ in
             for action in router.takeAllNavAction() {
-                switch action {
-                case .push(let path):
-                    router.pushNavPath(path)
-                case .pop:
-                    router.popNavPath()
-                case .popIfMatch(let path):
-                    router.popNavPathIfMatch(path)
-                case .popMultiIfMatch(let paths):
-                    router.popMultiNavPathsIfMatch(paths)
-                case .popToRoot:
-                    router.popNavPathToRoot()
-                }
+                applyAction(action, router: router, delegate: delegate)
             }
+            // 标记当前 navPath 已经被 delegate 处理过,后续 onChange(of: navPath)
+            // 看到的相同值应直接跳过
+            router.lastSyncedNavPath = router.navPath
         }
-        .onChange(of: router.navPath) { oldNavPath, newNavPath in
-            processPathChanges(oldNavPath: oldNavPath, newNavPath: newNavPath, delegate: delegate)
+        .onChange(of: router.navPath) { _, newNavPath in
+            // 程序触发的变化已经在 trigger handler 里处理过,navPath 此时等于 lastSyncedNavPath
+            // 不等的话说明是用户手势返回(或其它 binding 直改),走 gesture 流程
+            guard newNavPath != router.lastSyncedNavPath else { return }
+            processGesturePathChanges(
+                from: router.lastSyncedNavPath, to: newNavPath, delegate: delegate)
+            router.lastSyncedNavPath = newNavPath
         }
     }
+}
 
+@available(iOS 17.0, *)
+@MainActor
+private func applyAction(
+    _ action: CmRouteAction,
+    router: CmRouterNew,
+    delegate: CmRouterDelegateProtocol?
+) {
+    switch action {
+    case .push(let path):
+        router.pushNavPath(path)
+        delegate?.afterPush(path: path)
+
+    case .replace(let newPath):
+        let popped = router.replaceNavPath(newPath)  // 一次性更新 binding
+        if let p = popped {
+            p.onFinish?()
+            delegate?.afterPop(path: p)
+        }
+        delegate?.afterPush(path: newPath)
+
+    case .pop:
+        guard let last = router.navPath.last else {
+            router.popNavPath()  // 仅打日志
+            return
+        }
+        router.popNavPath()
+        last.onFinish?()
+        delegate?.afterPop(path: last)
+
+    case .popIfMatch(let path):
+        guard router.navPath.last == path, let last = router.navPath.last else { return }
+        router.popNavPath()
+        last.onFinish?()
+        delegate?.afterPop(path: last)
+
+    case .popMultiIfMatch(let paths):
+        let suffix = Array(router.navPath.suffix(paths.count))
+        let target = Array(paths.map { $0.path }.reversed())
+        guard suffix.map({ $0.path }) == target else {
+            _ = router.popMultiNavPathsIfMatch(paths)  // 仅打日志
+            return
+        }
+        _ = router.popMultiNavPathsIfMatch(paths)
+        for p in suffix.reversed() {
+            p.onFinish?()
+            delegate?.afterPop(path: p)
+        }
+
+    case .popToRoot:
+        let toPop = router.navPath
+        router.popNavPathToRoot()
+        for p in toPop.reversed() {
+            p.onFinish?()
+            delegate?.afterPop(path: p)
+        }
+    }
 }
 
 @available(iOS, introduced: 16.0, obsoleted: 17.0)
@@ -479,29 +539,80 @@ public struct CmRouterViewOld<Content: View, Dest: View>: View {
                     destinationView(path)
                 }
         }
-        .onAppear {
+        .task {
             router.delegate = delegate
         }
         .environmentObject(router)
-        .onChange(of: router.navigationTrigger) {
-            _ in
+        .onChange(of: router.navigationTrigger) { _ in
             for action in router.takeAllNavAction() {
-                switch action {
-                case .push(let path):
-                    router.pushNavPath(path)
-                case .pop:
-                    router.popNavPath()
-                case .popIfMatch(let path):
-                    router.popNavPathIfMatch(path)
-                case .popMultiIfMatch(let paths):
-                    router.popMultiNavPathsIfMatch(paths)
-                case .popToRoot:
-                    router.popNavPathToRoot()
-                }
+                applyActionOld(action, router: router, delegate: delegate)
             }
+            router.lastSyncedNavPath = router.navPath
         }
-        .onChange(of: router.navPath) { oldNavPath in
-            processPathChanges(oldNavPath: oldNavPath, newNavPath: router.navPath, delegate: delegate)
+        .onChange(of: router.navPath) { _ in
+            let newNavPath = router.navPath
+            guard newNavPath != router.lastSyncedNavPath else { return }
+            processGesturePathChanges(
+                from: router.lastSyncedNavPath, to: newNavPath, delegate: delegate)
+            router.lastSyncedNavPath = newNavPath
+        }
+    }
+}
+
+@available(iOS, introduced: 16.0, obsoleted: 17.0)
+@MainActor
+private func applyActionOld(
+    _ action: CmRouteAction,
+    router: CmRouterOld,
+    delegate: CmRouterDelegateProtocol?
+) {
+    switch action {
+    case .push(let path):
+        router.pushNavPath(path)
+        delegate?.afterPush(path: path)
+
+    case .replace(let newPath):
+        let popped = router.replaceNavPath(newPath)
+        if let p = popped {
+            p.onFinish?()
+            delegate?.afterPop(path: p)
+        }
+        delegate?.afterPush(path: newPath)
+
+    case .pop:
+        guard let last = router.navPath.last else {
+            router.popNavPath()
+            return
+        }
+        router.popNavPath()
+        last.onFinish?()
+        delegate?.afterPop(path: last)
+
+    case .popIfMatch(let path):
+        guard router.navPath.last == path, let last = router.navPath.last else { return }
+        router.popNavPath()
+        last.onFinish?()
+        delegate?.afterPop(path: last)
+
+    case .popMultiIfMatch(let paths):
+        let suffix = Array(router.navPath.suffix(paths.count))
+        let target = Array(paths.map { $0.path }.reversed())
+        guard suffix.map({ $0.path }) == target else {
+            _ = router.popMultiNavPathsIfMatch(paths)
+            return
+        }
+        _ = router.popMultiNavPathsIfMatch(paths)
+        for p in suffix.reversed() {
+            p.onFinish?()
+            delegate?.afterPop(path: p)
+        }
+
+    case .popToRoot:
+        let toPop = router.navPath
+        router.popNavPathToRoot()
+        for p in toPop.reversed() {
+            p.onFinish?()
+            delegate?.afterPop(path: p)
         }
     }
 }
@@ -512,7 +623,7 @@ public struct NavigationButtonNew<Body: View>: View {
     let path: (String, [String: String])
     let onFinish: (() -> Void)?
 
-    @Environment(CmRouterNew.self) var router
+    @Environment(CmRouter.self) var router
 
     public init(
         _ path: (String, [String: String]), onFinish: (() -> Void)? = nil,

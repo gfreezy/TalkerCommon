@@ -7,6 +7,7 @@
 
 import Combine
 import Foundation
+import TalkerCommonLogging
 
 public struct ErrorMsg: Identifiable, Sendable, Equatable {
     public var id: String {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TalkerCommonLogging
 
 
 fileprivate struct InitialTask<Content: View, T: Equatable>: View {

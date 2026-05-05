@@ -8,6 +8,7 @@
 import Foundation
 import OSLog
 import StoreKit
+import TalkerCommonSync
 
 public protocol AnalyticsEvent {
     func toPlatformEvent() -> PlatformEvent

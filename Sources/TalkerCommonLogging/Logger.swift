@@ -7,6 +7,7 @@
 
 import Foundation
 import Puppy
+import TalkerCommonSync
 import ZIPFoundation
 
 fileprivate final class MyLogger: Sendable {
@@ -153,4 +154,101 @@ public func infoLog(
     MyLogger.shared.value().log(
         items, logLevel: .info, file: file, line: line, column: column, function: function,
         separator: separator, terminator: terminator)
+}
+
+private func formatElapsed(_ d: Duration) -> String {
+    let (seconds, attos) = d.components
+    let ms = Double(seconds) * 1000 + Double(attos) / 1_000_000_000_000_000
+    if ms < 1 {
+        return String(format: "%.3fms", ms)
+    } else if ms < 1000 {
+        return String(format: "%.1fms", ms)
+    } else {
+        return String(format: "%.2fs", ms / 1000)
+    }
+}
+
+@discardableResult
+public func timeLog<T>(
+    _ label: String,
+    logLevel: LogLevel = .debug,
+    file: String = #file, line: Int = #line, column: Int = #column, function: String = #function,
+    _ block: () throws -> T
+) rethrows -> T {
+    let start = ContinuousClock.now
+    defer {
+        let elapsed = ContinuousClock.now - start
+        MyLogger.shared.value().log(
+            "\(label) ⏱ \(formatElapsed(elapsed))",
+            logLevel: logLevel,
+            file: file, line: line, column: column, function: function)
+    }
+    return try block()
+}
+
+@discardableResult
+public func timeLog<T>(
+    _ label: String,
+    logLevel: LogLevel = .debug,
+    file: String = #file, line: Int = #line, column: Int = #column, function: String = #function,
+    _ block: () async throws -> T
+) async rethrows -> T {
+    let start = ContinuousClock.now
+    defer {
+        let elapsed = ContinuousClock.now - start
+        MyLogger.shared.value().log(
+            "\(label) ⏱ \(formatElapsed(elapsed))",
+            logLevel: logLevel,
+            file: file, line: line, column: column, function: function)
+    }
+    return try await block()
+}
+
+public final class LogTimer: @unchecked Sendable {
+    public let label: String
+    public let logLevel: LogLevel
+    private let start: ContinuousClock.Instant
+    private let _lastLap: Lock<ContinuousClock.Instant>
+
+    public init(_ label: String, logLevel: LogLevel = .debug) {
+        self.label = label
+        self.logLevel = logLevel
+        let now = ContinuousClock.now
+        self.start = now
+        self._lastLap = Lock(now)
+    }
+
+    public func lap(
+        _ items: Any...,
+        file: String = #file, line: Int = #line, column: Int = #column, function: String = #function,
+        separator: String = " ",
+        terminator: String = "\n"
+    ) {
+        let now = ContinuousClock.now
+        let sinceLast = _lastLap.withLock { last -> Duration in
+            let e = now - last
+            last = now
+            return e
+        }
+        let total = now - start
+        let prefix = "\(label) ⏱ +\(formatElapsed(sinceLast)) total=\(formatElapsed(total))"
+        MyLogger.shared.value().log(
+            prefix, items, logLevel: logLevel,
+            file: file, line: line, column: column, function: function,
+            separator: separator, terminator: terminator)
+    }
+
+    public func stop(
+        _ items: Any...,
+        file: String = #file, line: Int = #line, column: Int = #column, function: String = #function,
+        separator: String = " ",
+        terminator: String = "\n"
+    ) {
+        let total = ContinuousClock.now - start
+        let prefix = "\(label) ⏱ done \(formatElapsed(total))"
+        MyLogger.shared.value().log(
+            prefix, items, logLevel: logLevel,
+            file: file, line: line, column: column, function: function,
+            separator: separator, terminator: terminator)
+    }
 }

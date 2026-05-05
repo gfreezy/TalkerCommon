@@ -1,4 +1,6 @@
 import SwiftUI
+import TalkerCommonLogging
+import TalkerCommonSync
 import UIKit
 
 public struct TextLineSegnemt: Sendable {

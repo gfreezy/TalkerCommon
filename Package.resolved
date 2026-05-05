@@ -1,15 +1,6 @@
 {
-  "originHash" : "3aaa176050cb140c29409620293bb85b778658baae2720718700845f95250176",
+  "originHash" : "9713958d0c70eb313f892fda3f08a4c562f1b78537c9561346c80d9447d706ff",
   "pins" : [
-    {
-      "identity" : "processed",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SwiftedMind/Processed",
-      "state" : {
-        "revision" : "3eec30203744bce19f1d40af50a68d49e5de7c1b",
-        "version" : "2.2.0"
-      }
-    },
     {
       "identity" : "puppy",
       "kind" : "remoteSourceControl",
